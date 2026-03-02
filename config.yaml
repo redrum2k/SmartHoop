@@ -1,0 +1,39 @@
+# Source
+source: 0  # webcam (0) or path to video file
+
+# Detection
+model: yolov8n.pt
+custom_model_path: null
+ball_class_id: 32
+confidence_threshold: 0.35
+inference_size: 416
+infer_every_n_frames: 1  # 1 = every frame; 2+ = skip and interpolate
+use_hsv_fallback: false
+
+# HSV fallback (when use_hsv_fallback: true)
+hue_low: 0
+hue_high: 10
+hue_low2: 170  # red wraps around in HSV
+hue_high2: 180
+sat_min: 100
+val_min: 100
+
+# Tracking
+max_occlusion_frames: 5
+history_sec: 1.5
+use_kalman: false
+association_max_distance: 80
+
+# Zones (loaded from zones.json after calibration)
+# hoop_zone, backboard_zone, attempt_roi
+
+# Classification
+K_hit_frames: 2
+K_backboard_frames: 2
+T_end_sec: 3.0
+cooldown_sec: 1.0
+downward_velocity_threshold: 50  # pixels/sec
+T_hit_max_sec: 2.0  # max time from attempt start to confirm hit
+
+# Performance
+attempt_roi_crop: null  # [x, y, w, h] to crop before inference
