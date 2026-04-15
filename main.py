@@ -282,6 +282,7 @@ def run_detection_loop(source, config, zones, debug, config_path, zones_path):
 
         if result.outcome is not None:
             log_event(result.outcome.value, classifier.get_attempt_id(), tracked, debug)
+            _dispatch_shot(result, config)
 
         if debug:
             frame = draw_overlay(
@@ -299,6 +300,41 @@ def run_detection_loop(source, config, zones, debug, config_path, zones_path):
 
     cap.release()
     cv2.destroyAllWindows()
+
+
+def _dispatch_shot(result, config: dict):
+    """Non-blocking POST of shot event to Pico W (hoop) and Pi 5.
+
+    Spawns daemon threads so classification latency is never affected.
+    All network failures are caught and logged; the main loop is never interrupted.
+    """
+    from devices.config import DISPATCH_ENABLED, PICO_HOOP_URL, PI5_SHOT_URL
+    if not DISPATCH_ENABLED:
+        return
+
+    import threading
+    import urllib.request
+    import json as _json
+
+    payload = _json.dumps({
+        "event":    result.outcome.value,
+        "hits":     result.hit,
+        "attempts": result.hit + result.backboard + result.miss,
+    }).encode()
+
+    def _post(url: str):
+        try:
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            urllib.request.urlopen(req, timeout=0.5)
+        except Exception as e:
+            print(f"[dispatch] {url}: {e}")
+
+    for url in (PICO_HOOP_URL, PI5_SHOT_URL):
+        threading.Thread(target=_post, args=(url,), daemon=True).start()
 
 
 def log_event(event: str, attempt_id: int, tracked, debug: bool):
